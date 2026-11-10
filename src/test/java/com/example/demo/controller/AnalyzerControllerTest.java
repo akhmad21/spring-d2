@@ -1,0 +1,71 @@
+package com.example.demo.controller;
+
+import com.example.demo.dto.request.CharAnalysisRequest;
+import com.example.demo.dto.response.CharAnalysisListResponse;
+import com.example.demo.dto.response.CharAnalysisResponse;
+import com.example.demo.service.CharAnalysisService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import java.util.List;
+import java.util.Map;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+class AnalyzerControllerTest {
+
+    private MockMvc mockMvc;
+    private CharAnalysisService charAnalysisService;
+
+    @BeforeEach
+    void setUp() {
+        charAnalysisService = Mockito.mock(CharAnalysisService.class);
+        mockMvc = MockMvcBuilders.standaloneSetup(new AnalyzerController(charAnalysisService)).build();
+    }
+
+    @Test
+    void testGetListOnlyReturnsIdKalimatTotalHuruf() throws Exception {
+        CharAnalysisListResponse item = new CharAnalysisListResponse(1L, "gajah mati", 9);
+        Mockito.when(charAnalysisService.cari(null)).thenReturn(List.of(item));
+
+        mockMvc.perform(get("/api/v1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].kalimat").value("gajah mati"))
+                .andExpect(jsonPath("$.data[0].totalHuruf").value(9))
+                .andExpect(jsonPath("$.data[0].frekuensi").doesNotExist());
+    }
+
+    @Test
+    void testHitungDanSimpan() throws Exception {
+        CharAnalysisResponse mockResponse = new CharAnalysisResponse(
+                1L,
+                "gajah mati meninggalkan gading",
+                27,
+                Map.of('a', 6, 'g', 5)
+        );
+        Mockito.when(charAnalysisService.hitungDanSimpan(any(CharAnalysisRequest.class))).thenReturn(mockResponse);
+
+        String jsonPayload = "{\"kalimat\": \"gajah mati meninggalkan gading\"}";
+
+        mockMvc.perform(post("/api/v1")
+                        .header("X-Request-Id", "req-001")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.message").value("OK"))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.kalimat").value("gajah mati meninggalkan gading"))
+                .andExpect(jsonPath("$.data.totalHuruf").value(27));
+    }
+}
