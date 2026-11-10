@@ -1,6 +1,7 @@
 package com.example.demo.service.impl;
 
 import com.example.demo.dto.request.CharAnalysisRequest;
+import com.example.demo.dto.response.BaseResponse;
 import com.example.demo.dto.response.CharAnalysisListResponse;
 import com.example.demo.dto.response.CharAnalysisResponse;
 import com.example.demo.entity.CharAnalysis;
@@ -49,5 +50,17 @@ public class CharAnalysisServiceImpl implements CharAnalysisService {
 
         CharAnalysis saved = charAnalysisRepository.save(entity);
         return CharAnalysisResponse.from(saved, counter.toMap());
+    }
+
+    @Override
+    public BaseResponse<CharAnalysisResponse> getDetailById(Long id) {
+        return charAnalysisRepository.findById(id)
+                .map(data -> BaseResponse.ok(toResponse(data)))
+                .orElseGet(() -> BaseResponse.error("Data dengan id " + id + " tidak ditemukan"));
+    }
+
+    private CharAnalysisResponse toResponse(CharAnalysis data) {
+        CharCounter counter = new CharCounter(data.getKalimat());
+        return CharAnalysisResponse.from(data, counter.toMap());
     }
 }
