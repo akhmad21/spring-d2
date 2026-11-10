@@ -14,8 +14,11 @@ public class CharAnalysis {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, length = 500)
     private String kalimat;
+
+    @Column(length = 100)
+    private String author;
 
     @Column(name = "total_huruf")
     private int totalHuruf;

@@ -8,11 +8,13 @@ import com.example.demo.dto.response.CharAnalysisResponse;
 import com.example.demo.entity.CharAnalysis;
 import com.example.demo.exception.DuplicateKalimatException;
 import com.example.demo.exception.InvalidKalimatException;
+import com.example.demo.exception.QuoteNotFoundException;
 import com.example.demo.exception.QuoteUnavailableException;
 import com.example.demo.repository.CharAnalysisRepository;
 import com.example.demo.rest.QuoteClient;
 import com.example.demo.service.CharAnalysisService;
 import com.example.demo.util.CharCounter;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -45,35 +47,41 @@ public class CharAnalysisServiceImpl implements CharAnalysisService {
     }
 
     @Override
-    public CharAnalysisResponse hitungDanSimpan(CharAnalysisRequest request) {
+    public CharAnalysisResponse simpan(String kalimat, String author) {
         // 1. Validasi input: tidak boleh null, kosong, atau hanya spasi
-        if (request == null || request.getKalimat() == null || request.getKalimat().trim().isEmpty()) {
+        if (kalimat == null || kalimat.trim().isEmpty()) {
             throw new InvalidKalimatException("Kalimat tidak boleh kosong atau hanya berupa spasi");
         }
 
-        String kalimat = request.getKalimat().trim();
+        String trimmedKalimat = kalimat.trim();
 
-        // 2. Validasi panjang maksimal entity (255 karakter)
-        if (kalimat.length() > 255) {
-            throw new InvalidKalimatException("Panjang kalimat tidak boleh melebihi 255 karakter");
+        // 2. Validasi panjang maksimal entity (500 karakter)
+        if (trimmedKalimat.length() > 500) {
+            throw new InvalidKalimatException("Panjang kalimat tidak boleh melebihi 500 karakter");
         }
 
         // 3. Validasi duplikasi: cek apakah kalimat sudah ada di DB (Case-Insensitive)
-        if (charAnalysisRepository.existsByKalimatIgnoreCase(kalimat)) {
-            throw new DuplicateKalimatException("Kalimat '" + kalimat + "' sudah pernah dianalisis dan tersimpan di database");
+        if (charAnalysisRepository.existsByKalimatIgnoreCase(trimmedKalimat)) {
+            throw new DuplicateKalimatException("Kalimat '" + trimmedKalimat + "' sudah pernah dianalisis dan tersimpan di database");
         }
 
         // 4. Proses hitung karakter
-        CharCounter counter = new CharCounter(kalimat);
+        CharCounter counter = new CharCounter(trimmedKalimat);
 
-        // 5. Simpan entity ke database
+        // 5. Simpan entity ke database beserta author (jika ada)
         CharAnalysis entity = new CharAnalysis();
-        entity.setKalimat(kalimat);
+        entity.setKalimat(trimmedKalimat);
+        entity.setAuthor(author != null ? author.trim() : null);
         entity.setTotalHuruf(counter.getTotalHuruf());
         entity.setCreatedAt(LocalDateTime.now());
 
         CharAnalysis saved = charAnalysisRepository.save(entity);
         return CharAnalysisResponse.from(saved, counter.toMap());
+    }
+
+    @Override
+    public CharAnalysisResponse hitungDanSimpan(CharAnalysisRequest request) {
+        return simpan(request != null ? request.getKalimat() : null, null);
     }
 
     @Override
@@ -89,9 +97,25 @@ public class CharAnalysisServiceImpl implements CharAnalysisService {
             throw new QuoteUnavailableException("Layanan quote mengembalikan data kosong");
         }
 
-        CharAnalysisRequest request = new CharAnalysisRequest();
-        request.setKalimat(quoteResponse.getQuote());
-        return hitungDanSimpan(request);
+        return simpan(quoteResponse.getQuote(), quoteResponse.getAuthor());
+    }
+
+    @Override
+    public CharAnalysisResponse hitungDanSimpanQuoteById(Long id) {
+        QuoteResponse quoteResponse;
+        try {
+            quoteResponse = quoteClient.getQuoteById(id);
+        } catch (FeignException.NotFound ex) {
+            throw new QuoteNotFoundException(id);
+        } catch (Exception ex) {
+            throw new QuoteUnavailableException("Gagal menghubungi layanan dummyjson: " + ex.getMessage());
+        }
+
+        if (quoteResponse == null || quoteResponse.getQuote() == null || quoteResponse.getQuote().isBlank()) {
+            throw new QuoteNotFoundException(id);
+        }
+
+        return simpan(quoteResponse.getQuote(), quoteResponse.getAuthor());
     }
 
     @Override

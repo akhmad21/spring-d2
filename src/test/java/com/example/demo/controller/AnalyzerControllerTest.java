@@ -7,6 +7,7 @@ import com.example.demo.dto.response.CharAnalysisResponse;
 import com.example.demo.exception.DuplicateKalimatException;
 import com.example.demo.exception.GlobalExceptionHandler;
 import com.example.demo.exception.InvalidKalimatException;
+import com.example.demo.exception.QuoteNotFoundException;
 import com.example.demo.exception.QuoteUnavailableException;
 import com.example.demo.service.CharAnalysisService;
 import org.junit.jupiter.api.BeforeEach;
@@ -108,8 +109,8 @@ class AnalyzerControllerTest {
     }
 
     @Test
-    void testHitungDanSimpanPanjangMelebihi255Throws400() throws Exception {
-        String kalimatPanjang = "a".repeat(256);
+    void testHitungDanSimpanPanjangMelebihi500Throws400() throws Exception {
+        String kalimatPanjang = "a".repeat(501);
         String jsonPayload = "{\"kalimat\": \"" + kalimatPanjang + "\"}";
 
         mockMvc.perform(post("/api/v1")
@@ -117,7 +118,7 @@ class AnalyzerControllerTest {
                         .content(jsonPayload))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value("failed"))
-                .andExpect(jsonPath("$.message").value("Panjang kalimat tidak boleh melebihi 255 karakter"));
+                .andExpect(jsonPath("$.message").value("Panjang kalimat tidak boleh melebihi 500 karakter"));
     }
 
     @Test
@@ -125,18 +126,52 @@ class AnalyzerControllerTest {
         CharAnalysisResponse mockResponse = new CharAnalysisResponse(
                 5L,
                 "Life is beautiful",
+                "Anonymous",
                 15,
                 Map.of('e', 2, 'i', 3)
         );
         Mockito.when(charAnalysisService.hitungDanSimpanQuoteAcak()).thenReturn(mockResponse);
 
-        mockMvc.perform(post("/api/v1/quote")
+        mockMvc.perform(post("/api/v1/from-quote")
                         .header("X-Request-Id", "feign-01"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data.id").value(5))
                 .andExpect(jsonPath("$.data.kalimat").value("Life is beautiful"))
+                .andExpect(jsonPath("$.data.author").value("Anonymous"))
                 .andExpect(jsonPath("$.data.totalHuruf").value(15));
+    }
+
+    @Test
+    void testHitungDanSimpanQuoteByIdSuccess() throws Exception {
+        CharAnalysisResponse mockResponse = new CharAnalysisResponse(
+                7L,
+                "Your heart is the size of an ocean.",
+                "Rumi",
+                28,
+                Map.of('a', 3, 'o', 3)
+        );
+        Mockito.when(charAnalysisService.hitungDanSimpanQuoteById(eq(1L))).thenReturn(mockResponse);
+
+        mockMvc.perform(post("/api/v1/from-quote/1")
+                        .header("X-Request-Id", "quote-id-01"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(7))
+                .andExpect(jsonPath("$.data.kalimat").value("Your heart is the size of an ocean."))
+                .andExpect(jsonPath("$.data.author").value("Rumi"))
+                .andExpect(jsonPath("$.data.totalHuruf").value(28));
+    }
+
+    @Test
+    void testHitungDanSimpanQuoteByIdNotFoundThrows404() throws Exception {
+        Mockito.when(charAnalysisService.hitungDanSimpanQuoteById(eq(99999L)))
+                .thenThrow(new QuoteNotFoundException(99999L));
+
+        mockMvc.perform(post("/api/v1/from-quote/99999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("failed"))
+                .andExpect(jsonPath("$.message").value("Quote dengan id 99999 tidak ditemukan di DummyJSON"));
     }
 
     @Test
@@ -144,7 +179,7 @@ class AnalyzerControllerTest {
         Mockito.when(charAnalysisService.hitungDanSimpanQuoteAcak())
                 .thenThrow(new QuoteUnavailableException("Gagal menghubungi layanan dummyjson"));
 
-        mockMvc.perform(post("/api/v1/quote"))
+        mockMvc.perform(post("/api/v1/from-quote"))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.status").value("failed"))
                 .andExpect(jsonPath("$.message").value("Layanan quote eksternal sedang tidak tersedia: Gagal menghubungi layanan dummyjson"));

@@ -8,6 +8,6 @@ import lombok.Data;
 public class CharAnalysisRequest {
 
     @NotBlank(message = "Kalimat tidak boleh kosong atau hanya berupa spasi")
-    @Size(max = 255, message = "Panjang kalimat tidak boleh melebihi 255 karakter")
+    @Size(max = 500, message = "Panjang kalimat tidak boleh melebihi 500 karakter")
     private String kalimat;
 }

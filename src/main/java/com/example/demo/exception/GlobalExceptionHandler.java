@@ -13,6 +13,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(QuoteNotFoundException.class)
+    public ResponseEntity<BaseResponse<Void>> handleQuoteNotFound(QuoteNotFoundException ex) {
+        log.warn("Quote not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(BaseResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(QuoteUnavailableException.class)
     public ResponseEntity<BaseResponse<Void>> handleQuoteUnavailableException(QuoteUnavailableException ex) {
         log.error("Quote external service error: {}", ex.getMessage());

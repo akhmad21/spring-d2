@@ -14,5 +14,7 @@ public interface CharAnalysisService {
     List<CharAnalysisResponse> cariMinimalHuruf(int min);
     List<CharAnalysisResponse> cariTerbaru();
 
+    CharAnalysisResponse simpan(String kalimat, String author);
     CharAnalysisResponse hitungDanSimpanQuoteAcak();
+    CharAnalysisResponse hitungDanSimpanQuoteById(Long id);
 }

@@ -38,12 +38,21 @@ public class AnalyzerController {
         return BaseResponse.ok(charAnalysisService.hitungDanSimpan(request));
     }
 
-    @PostMapping("/quote")
+    @PostMapping({"/from-quote", "/quote"})
     public BaseResponse<CharAnalysisResponse> hitungDanSimpanQuoteAcak(
             @RequestHeader(value = "X-Request-Id", required = false) String requestId
     ) {
         log.info("X-Request-Id: {}, Triggering Random Quote Analysis via Feign", requestId);
         return BaseResponse.ok(charAnalysisService.hitungDanSimpanQuoteAcak());
+    }
+
+    @PostMapping("/from-quote/{id}")
+    public BaseResponse<CharAnalysisResponse> hitungDanSimpanQuoteById(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId
+    ) {
+        log.info("X-Request-Id: {}, Triggering Quote Analysis for ID: {}", requestId, id);
+        return BaseResponse.ok(charAnalysisService.hitungDanSimpanQuoteById(id));
     }
 
     @GetMapping("/{id}")
