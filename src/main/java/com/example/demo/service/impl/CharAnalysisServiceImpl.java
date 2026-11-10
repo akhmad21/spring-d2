@@ -49,7 +49,12 @@ public class CharAnalysisServiceImpl implements CharAnalysisService {
 
         String kalimat = request.getKalimat().trim();
 
-        // 2. Validasi duplikasi: cek apakah kalimat sudah ada di DB (Case-Insensitive)
+        // 2. Validasi panjang maksimal entity (255 karakter)
+        if (kalimat.length() > 255) {
+            throw new InvalidKalimatException("Panjang kalimat tidak boleh melebihi 255 karakter");
+        }
+
+        // 3. Validasi duplikasi: cek apakah kalimat sudah ada di DB (Case-Insensitive)
         if (charAnalysisRepository.existsByKalimatIgnoreCase(kalimat)) {
             throw new DuplicateKalimatException("Kalimat '" + kalimat + "' sudah pernah dianalisis dan tersimpan di database");
         }

@@ -107,6 +107,19 @@ class AnalyzerControllerTest {
     }
 
     @Test
+    void testHitungDanSimpanPanjangMelebihi255Throws400() throws Exception {
+        String kalimatPanjang = "a".repeat(256);
+        String jsonPayload = "{\"kalimat\": \"" + kalimatPanjang + "\"}";
+
+        mockMvc.perform(post("/api/v1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("failed"))
+                .andExpect(jsonPath("$.message").value("Panjang kalimat tidak boleh melebihi 255 karakter"));
+    }
+
+    @Test
     void testDetailByIdFound() throws Exception {
         CharAnalysisResponse mockResponse = new CharAnalysisResponse(
                 1L,

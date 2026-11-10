@@ -5,6 +5,7 @@ import com.example.demo.dto.response.BaseResponse;
 import com.example.demo.dto.response.CharAnalysisListResponse;
 import com.example.demo.dto.response.CharAnalysisResponse;
 import com.example.demo.service.CharAnalysisService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,7 @@ public class AnalyzerController {
     @PostMapping
     public BaseResponse<CharAnalysisResponse> hitungDanSimpan(
             @RequestHeader(value = "X-Request-Id", required = false) String requestId,
-            @RequestBody CharAnalysisRequest request
+            @Valid @RequestBody CharAnalysisRequest request
     ) {
         String kalimat = request != null ? request.getKalimat() : null;
         log.info("X-Request-Id: {}, kalimat: {}", requestId, kalimat);
