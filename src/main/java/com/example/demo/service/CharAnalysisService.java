@@ -11,4 +11,6 @@ public interface CharAnalysisService {
     List<CharAnalysisListResponse> cari(String kata);
     CharAnalysisResponse hitungDanSimpan(CharAnalysisRequest request);
     BaseResponse<CharAnalysisResponse> getDetailById(Long id);
+    List<CharAnalysisResponse> cariMinimalHuruf(int min);
+    List<CharAnalysisResponse> cariTerbaru();
 }

@@ -45,4 +45,14 @@ public class AnalyzerController {
         }
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/minimal")
+    public BaseResponse<List<CharAnalysisResponse>> cariMinimalHuruf(@RequestParam(defaultValue = "0") int min) {
+        return BaseResponse.ok(charAnalysisService.cariMinimalHuruf(min));
+    }
+
+    @GetMapping("/terbaru")
+    public BaseResponse<List<CharAnalysisResponse>> cariTerbaru() {
+        return BaseResponse.ok(charAnalysisService.cariTerbaru());
+    }
 }

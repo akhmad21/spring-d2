@@ -98,4 +98,26 @@ class AnalyzerControllerTest {
                 .andExpect(jsonPath("$.status").value("failed"))
                 .andExpect(jsonPath("$.message").value("Data dengan id 99 tidak ditemukan"));
     }
+
+    @Test
+    void testCariMinimalHuruf() throws Exception {
+        CharAnalysisResponse item = new CharAnalysisResponse(1L, "kalimat panjang", 14, Map.of('a', 4));
+        Mockito.when(charAnalysisService.cariMinimalHuruf(10)).thenReturn(List.of(item));
+
+        mockMvc.perform(get("/api/v1/minimal?min=10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data[0].kalimat").value("kalimat panjang"));
+    }
+
+    @Test
+    void testCariTerbaru() throws Exception {
+        CharAnalysisResponse item = new CharAnalysisResponse(2L, "kalimat baru", 11, Map.of('a', 3));
+        Mockito.when(charAnalysisService.cariTerbaru()).thenReturn(List.of(item));
+
+        mockMvc.perform(get("/api/v1/terbaru"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data[0].id").value(2));
+    }
 }

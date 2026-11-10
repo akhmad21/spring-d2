@@ -59,6 +59,26 @@ public class CharAnalysisServiceImpl implements CharAnalysisService {
                 .orElseGet(() -> BaseResponse.error("Data dengan id " + id + " tidak ditemukan"));
     }
 
+    @Override
+    public List<CharAnalysisResponse> cariMinimalHuruf(int min) {
+        List<CharAnalysis> list = charAnalysisRepository.findByTotalHurufMinimal(min);
+        List<CharAnalysisResponse> hasil = new ArrayList<>();
+        for (CharAnalysis data : list) {
+            hasil.add(toResponse(data));
+        }
+        return hasil;
+    }
+
+    @Override
+    public List<CharAnalysisResponse> cariTerbaru() {
+        List<CharAnalysis> list = charAnalysisRepository.findTop5Terbaru();
+        List<CharAnalysisResponse> hasil = new ArrayList<>();
+        for (CharAnalysis data : list) {
+            hasil.add(toResponse(data));
+        }
+        return hasil;
+    }
+
     private CharAnalysisResponse toResponse(CharAnalysis data) {
         CharCounter counter = new CharCounter(data.getKalimat());
         return CharAnalysisResponse.from(data, counter.toMap());
