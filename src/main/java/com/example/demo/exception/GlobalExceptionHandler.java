@@ -1,6 +1,7 @@
 package com.example.demo.exception;
 
 import com.example.demo.dto.response.BaseResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -8,8 +9,16 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(QuoteUnavailableException.class)
+    public ResponseEntity<BaseResponse<Void>> handleQuoteUnavailableException(QuoteUnavailableException ex) {
+        log.error("Quote external service error: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(BaseResponse.error("Layanan quote eksternal sedang tidak tersedia: " + ex.getMessage()));
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<BaseResponse<Void>> handleValidationException(MethodArgumentNotValidException ex) {

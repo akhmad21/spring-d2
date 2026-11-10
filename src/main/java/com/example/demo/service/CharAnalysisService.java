@@ -13,4 +13,6 @@ public interface CharAnalysisService {
     BaseResponse<CharAnalysisResponse> getDetailById(Long id);
     List<CharAnalysisResponse> cariMinimalHuruf(int min);
     List<CharAnalysisResponse> cariTerbaru();
+
+    CharAnalysisResponse hitungDanSimpanQuoteAcak();
 }

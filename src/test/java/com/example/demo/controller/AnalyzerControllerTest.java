@@ -7,6 +7,7 @@ import com.example.demo.dto.response.CharAnalysisResponse;
 import com.example.demo.exception.DuplicateKalimatException;
 import com.example.demo.exception.GlobalExceptionHandler;
 import com.example.demo.exception.InvalidKalimatException;
+import com.example.demo.exception.QuoteUnavailableException;
 import com.example.demo.service.CharAnalysisService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -117,6 +118,36 @@ class AnalyzerControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value("failed"))
                 .andExpect(jsonPath("$.message").value("Panjang kalimat tidak boleh melebihi 255 karakter"));
+    }
+
+    @Test
+    void testHitungDanSimpanQuoteAcakSuccess() throws Exception {
+        CharAnalysisResponse mockResponse = new CharAnalysisResponse(
+                5L,
+                "Life is beautiful",
+                15,
+                Map.of('e', 2, 'i', 3)
+        );
+        Mockito.when(charAnalysisService.hitungDanSimpanQuoteAcak()).thenReturn(mockResponse);
+
+        mockMvc.perform(post("/api/v1/quote")
+                        .header("X-Request-Id", "feign-01"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(5))
+                .andExpect(jsonPath("$.data.kalimat").value("Life is beautiful"))
+                .andExpect(jsonPath("$.data.totalHuruf").value(15));
+    }
+
+    @Test
+    void testHitungDanSimpanQuoteAcakExternalErrorThrows503() throws Exception {
+        Mockito.when(charAnalysisService.hitungDanSimpanQuoteAcak())
+                .thenThrow(new QuoteUnavailableException("Gagal menghubungi layanan dummyjson"));
+
+        mockMvc.perform(post("/api/v1/quote"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.status").value("failed"))
+                .andExpect(jsonPath("$.message").value("Layanan quote eksternal sedang tidak tersedia: Gagal menghubungi layanan dummyjson"));
     }
 
     @Test

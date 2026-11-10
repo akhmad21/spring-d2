@@ -1,5 +1,6 @@
 package com.example.demo.service.impl;
 
+import com.example.demo.dto.feign.QuoteResponse;
 import com.example.demo.dto.request.CharAnalysisRequest;
 import com.example.demo.dto.response.BaseResponse;
 import com.example.demo.dto.response.CharAnalysisListResponse;
@@ -7,7 +8,9 @@ import com.example.demo.dto.response.CharAnalysisResponse;
 import com.example.demo.entity.CharAnalysis;
 import com.example.demo.exception.DuplicateKalimatException;
 import com.example.demo.exception.InvalidKalimatException;
+import com.example.demo.exception.QuoteUnavailableException;
 import com.example.demo.repository.CharAnalysisRepository;
+import com.example.demo.rest.QuoteClient;
 import com.example.demo.service.CharAnalysisService;
 import com.example.demo.util.CharCounter;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +26,7 @@ import java.util.List;
 public class CharAnalysisServiceImpl implements CharAnalysisService {
 
     private final CharAnalysisRepository charAnalysisRepository;
+    private final QuoteClient quoteClient;
 
     @Override
     public List<CharAnalysisListResponse> cari(String kata) {
@@ -59,10 +63,10 @@ public class CharAnalysisServiceImpl implements CharAnalysisService {
             throw new DuplicateKalimatException("Kalimat '" + kalimat + "' sudah pernah dianalisis dan tersimpan di database");
         }
 
-        // 3. Proses hitung karakter
+        // 4. Proses hitung karakter
         CharCounter counter = new CharCounter(kalimat);
 
-        // 4. Simpan entity ke database
+        // 5. Simpan entity ke database
         CharAnalysis entity = new CharAnalysis();
         entity.setKalimat(kalimat);
         entity.setTotalHuruf(counter.getTotalHuruf());
@@ -70,6 +74,24 @@ public class CharAnalysisServiceImpl implements CharAnalysisService {
 
         CharAnalysis saved = charAnalysisRepository.save(entity);
         return CharAnalysisResponse.from(saved, counter.toMap());
+    }
+
+    @Override
+    public CharAnalysisResponse hitungDanSimpanQuoteAcak() {
+        QuoteResponse quoteResponse;
+        try {
+            quoteResponse = quoteClient.getQuote();
+        } catch (Exception ex) {
+            throw new QuoteUnavailableException("Gagal menghubungi layanan dummyjson: " + ex.getMessage());
+        }
+
+        if (quoteResponse == null || quoteResponse.getQuote() == null || quoteResponse.getQuote().isBlank()) {
+            throw new QuoteUnavailableException("Layanan quote mengembalikan data kosong");
+        }
+
+        CharAnalysisRequest request = new CharAnalysisRequest();
+        request.setKalimat(quoteResponse.getQuote());
+        return hitungDanSimpan(request);
     }
 
     @Override

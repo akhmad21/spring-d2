@@ -19,3 +19,6 @@ spring:
       hibernate:
         format_sql: true
 
+quote:
+  api:
+    url: https://dummyjson.com
