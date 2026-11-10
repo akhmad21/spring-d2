@@ -5,6 +5,8 @@ import com.example.demo.dto.response.BaseResponse;
 import com.example.demo.dto.response.CharAnalysisListResponse;
 import com.example.demo.dto.response.CharAnalysisResponse;
 import com.example.demo.entity.CharAnalysis;
+import com.example.demo.exception.DuplicateKalimatException;
+import com.example.demo.exception.InvalidKalimatException;
 import com.example.demo.repository.CharAnalysisRepository;
 import com.example.demo.service.CharAnalysisService;
 import com.example.demo.util.CharCounter;
@@ -40,9 +42,22 @@ public class CharAnalysisServiceImpl implements CharAnalysisService {
 
     @Override
     public CharAnalysisResponse hitungDanSimpan(CharAnalysisRequest request) {
-        String kalimat = request != null && request.getKalimat() != null ? request.getKalimat() : "";
+        // 1. Validasi input: tidak boleh null, kosong, atau hanya spasi
+        if (request == null || request.getKalimat() == null || request.getKalimat().trim().isEmpty()) {
+            throw new InvalidKalimatException("Kalimat tidak boleh kosong atau hanya berupa spasi");
+        }
+
+        String kalimat = request.getKalimat().trim();
+
+        // 2. Validasi duplikasi: cek apakah kalimat sudah ada di DB (Case-Insensitive)
+        if (charAnalysisRepository.existsByKalimatIgnoreCase(kalimat)) {
+            throw new DuplicateKalimatException("Kalimat '" + kalimat + "' sudah pernah dianalisis dan tersimpan di database");
+        }
+
+        // 3. Proses hitung karakter
         CharCounter counter = new CharCounter(kalimat);
 
+        // 4. Simpan entity ke database
         CharAnalysis entity = new CharAnalysis();
         entity.setKalimat(kalimat);
         entity.setTotalHuruf(counter.getTotalHuruf());

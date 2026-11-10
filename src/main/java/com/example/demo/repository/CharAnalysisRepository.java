@@ -12,7 +12,8 @@ import java.util.List;
 public interface CharAnalysisRepository extends JpaRepository<CharAnalysis, Long> {
 
     List<CharAnalysis> findByKalimatContainingIgnoreCase(String kata);
-
+    // Method pengecekan duplikasi kalimat secara Case-Insensitive
+    boolean existsByKalimatIgnoreCase(String kalimat);
     // Tugas 5: Query JPQL (menggunakan nama Class Entity 'CharAnalysis' dan field Java 'totalHuruf')
     @Query("SELECT c FROM CharAnalysis c WHERE c.totalHuruf >= :min")
     List<CharAnalysis> findByTotalHurufMinimal(@Param("min") int min);

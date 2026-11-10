@@ -4,6 +4,9 @@ import com.example.demo.dto.request.CharAnalysisRequest;
 import com.example.demo.dto.response.BaseResponse;
 import com.example.demo.dto.response.CharAnalysisListResponse;
 import com.example.demo.dto.response.CharAnalysisResponse;
+import com.example.demo.exception.DuplicateKalimatException;
+import com.example.demo.exception.GlobalExceptionHandler;
+import com.example.demo.exception.InvalidKalimatException;
 import com.example.demo.service.CharAnalysisService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +33,9 @@ class AnalyzerControllerTest {
     @BeforeEach
     void setUp() {
         charAnalysisService = Mockito.mock(CharAnalysisService.class);
-        mockMvc = MockMvcBuilders.standaloneSetup(new AnalyzerController(charAnalysisService)).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(new AnalyzerController(charAnalysisService))
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
     }
 
     @Test
@@ -69,6 +74,36 @@ class AnalyzerControllerTest {
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.kalimat").value("gajah mati meninggalkan gading"))
                 .andExpect(jsonPath("$.data.totalHuruf").value(27));
+    }
+
+    @Test
+    void testHitungDanSimpanDuplicateThrows409() throws Exception {
+        Mockito.when(charAnalysisService.hitungDanSimpan(any(CharAnalysisRequest.class)))
+                .thenThrow(new DuplicateKalimatException("Kalimat 'gajah mati' sudah pernah dianalisis dan tersimpan di database"));
+
+        String jsonPayload = "{\"kalimat\": \"gajah mati\"}";
+
+        mockMvc.perform(post("/api/v1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value("failed"))
+                .andExpect(jsonPath("$.message").value("Kalimat 'gajah mati' sudah pernah dianalisis dan tersimpan di database"));
+    }
+
+    @Test
+    void testHitungDanSimpanInvalidThrows400() throws Exception {
+        Mockito.when(charAnalysisService.hitungDanSimpan(any(CharAnalysisRequest.class)))
+                .thenThrow(new InvalidKalimatException("Kalimat tidak boleh kosong atau hanya berupa spasi"));
+
+        String jsonPayload = "{\"kalimat\": \"   \"}";
+
+        mockMvc.perform(post("/api/v1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("failed"))
+                .andExpect(jsonPath("$.message").value("Kalimat tidak boleh kosong atau hanya berupa spasi"));
     }
 
     @Test
